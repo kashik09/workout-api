@@ -1,6 +1,6 @@
 # Workout Tracking API
 
-A Flask-based REST API for tracking workouts and exercises. Personal trainers can create workouts, add exercises, and track sets, reps, and duration for each exercise within a workout.
+A Flask-based REST API for tracking workouts and exercises with full user authentication. Users can create workouts, add exercises, and track sets, reps, and duration. Each user can only access their own workouts.
 
 ## Installation
 
@@ -49,14 +49,44 @@ The API will be available at `http://localhost:5555`
 
 ## API Endpoints
 
-### Workouts
+### Authentication
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/workouts` | List all workouts |
-| GET | `/workouts/<id>` | Get a single workout with associated exercises |
+| POST | `/signup` | Create a new user account |
+| POST | `/login` | Log in to an existing account |
+| DELETE | `/logout` | Log out of the current session |
+| GET | `/check_session` | Check if user is logged in |
+
+#### Signup Request Body
+```json
+{
+  "username": "john_doe",
+  "password": "securepassword123"
+}
+```
+
+#### Login Request Body
+```json
+{
+  "username": "john_doe",
+  "password": "securepassword123"
+}
+```
+
+### Workouts (Protected - Requires Authentication)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/workouts` | List all workouts for current user (paginated) |
+| GET | `/workouts/<id>` | Get a single workout with exercises |
 | POST | `/workouts` | Create a new workout |
-| DELETE | `/workouts/<id>` | Delete a workout (cascades to workout_exercises) |
+| PATCH | `/workouts/<id>` | Update a workout |
+| DELETE | `/workouts/<id>` | Delete a workout |
+
+#### Pagination Parameters
+- `page`: Page number (default: 1)
+- `per_page`: Items per page (default: 10, max: 100)
 
 #### Create Workout Request Body
 ```json
@@ -67,14 +97,22 @@ The API will be available at `http://localhost:5555`
 }
 ```
 
-### Exercises
+#### Update Workout Request Body
+```json
+{
+  "duration_minutes": 60,
+  "notes": "Extended morning workout"
+}
+```
+
+### Exercises (Protected - Requires Authentication)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/exercises` | List all exercises |
-| GET | `/exercises/<id>` | Get a single exercise with associated workouts |
+| GET | `/exercises/<id>` | Get a single exercise |
 | POST | `/exercises` | Create a new exercise |
-| DELETE | `/exercises/<id>` | Delete an exercise (cascades to workout_exercises) |
+| DELETE | `/exercises/<id>` | Delete an exercise |
 
 #### Create Exercise Request Body
 ```json
@@ -87,7 +125,7 @@ The API will be available at `http://localhost:5555`
 
 Valid categories: `strength`, `cardio`, `flexibility`, `balance`, `endurance`
 
-### Workout Exercises
+### Workout Exercises (Protected - Requires Authentication)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -104,49 +142,51 @@ Valid categories: `strength`, `cardio`, `flexibility`, `balance`, `endurance`
 
 ## Models
 
+### User
+- `id`: Integer, primary key
+- `username`: String, required, unique (max 80 chars)
+- `password_hash`: String, hashed with bcrypt
+
 ### Exercise
 - `id`: Integer, primary key
-- `name`: String, required, unique
+- `name`: String, required, unique (max 100 chars)
 - `category`: String, required (strength, cardio, flexibility, balance, endurance)
 - `equipment_needed`: Boolean, defaults to false
 
 ### Workout
 - `id`: Integer, primary key
 - `date`: Date, required
-- `duration_minutes`: Integer, required, must be positive
+- `duration_minutes`: Integer, required, must be positive (1-600)
 - `notes`: Text, optional
+- `user_id`: Foreign key to User
 
 ### WorkoutExercise (Join Table)
 - `id`: Integer, primary key
 - `workout_id`: Foreign key to Workout
 - `exercise_id`: Foreign key to Exercise
-- `reps`: Integer, optional
-- `sets`: Integer, optional
-- `duration_seconds`: Integer, optional
+- `reps`: Integer, optional, non-negative
+- `sets`: Integer, optional, non-negative
+- `duration_seconds`: Integer, optional, non-negative
 
-## Validations
+## Authentication
 
-### Table Constraints
-- Workout duration must be positive
-- Reps, sets, and duration_seconds must be non-negative
-- Exercise name must be unique
+This API uses session-based authentication. After logging in, the session cookie maintains your authentication state.
 
-### Model Validations
-- Exercise name cannot be empty (1-100 characters)
-- Exercise category must be valid
-- Workout duration must be between 1-600 minutes
-- Workout date is required
+- All workout routes are protected and require authentication
+- Users can only view, update, and delete their own workouts
+- Unauthorized requests return 401 status code
 
-### Schema Validations
-- Name length validation (1-100 characters)
-- Category must be one of the valid options
-- Duration must be within range (1-600)
-- Reps and sets must be non-negative
+## Test Accounts
+
+After seeding the database:
+- Username: `john_doe` | Password: `password123`
+- Username: `jane_smith` | Password: `password456`
 
 ## Dependencies
 
 - Flask 2.2.2
 - Flask-Migrate 3.1.0
 - Flask-SQLAlchemy 3.0.3
+- Flask-Bcrypt 1.0.1
 - Werkzeug 2.2.2
 - Marshmallow 3.20.1
