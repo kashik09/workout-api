@@ -84,9 +84,11 @@ The API will be available at `http://localhost:5555`
 | PATCH | `/workouts/<id>` | Update a workout |
 | DELETE | `/workouts/<id>` | Delete a workout |
 
-#### Pagination Parameters
+#### Query Parameters
 - `page`: Page number (default: 1)
 - `per_page`: Items per page (default: 10, max: 100)
+- `start_date`: Filter workouts on or after this date (YYYY-MM-DD)
+- `end_date`: Filter workouts on or before this date (YYYY-MM-DD)
 
 #### Create Workout Request Body
 ```json
