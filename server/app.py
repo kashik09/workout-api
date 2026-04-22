@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from datetime import datetime
 from flask import Flask, request, jsonify, make_response, session
 from flask_migrate import Migrate
 from marshmallow import ValidationError
@@ -111,12 +112,30 @@ def get_workouts():
 
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
 
     per_page = min(per_page, 100)
 
-    pagination = Workout.query.filter_by(user_id=user.id).order_by(
-        Workout.date.desc()
-    ).paginate(page=page, per_page=per_page, error_out=False)
+    query = Workout.query.filter_by(user_id=user.id)
+
+    if start_date:
+        try:
+            start = datetime.strptime(start_date, '%Y-%m-%d').date()
+            query = query.filter(Workout.date >= start)
+        except ValueError:
+            pass
+
+    if end_date:
+        try:
+            end = datetime.strptime(end_date, '%Y-%m-%d').date()
+            query = query.filter(Workout.date <= end)
+        except ValueError:
+            pass
+
+    pagination = query.order_by(Workout.date.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
 
     return make_response(jsonify({
         'workouts': workouts_schema.dump(pagination.items),
