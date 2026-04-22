@@ -57,6 +57,7 @@ The API will be available at `http://localhost:5555`
 | POST | `/login` | Log in to an existing account |
 | DELETE | `/logout` | Log out of the current session |
 | GET | `/check_session` | Check if user is logged in |
+| GET | `/me/stats` | Get current user's workout statistics |
 
 #### Signup Request Body
 ```json
