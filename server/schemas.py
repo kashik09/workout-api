@@ -1,5 +1,18 @@
-from marshmallow import Schema, fields, validate, validates, ValidationError, post_load
-from datetime import date
+from marshmallow import Schema, fields, validate, validates, ValidationError
+
+
+class UserSchema(Schema):
+    id = fields.Int(dump_only=True)
+    username = fields.Str(
+        required=True,
+        validate=validate.Length(min=1, max=80, error='Username must be between 1 and 80 characters')
+    )
+    password = fields.Str(load_only=True, required=True)
+
+    @validates('username')
+    def validate_username(self, value):
+        if not value or len(value.strip()) == 0:
+            raise ValidationError('Username cannot be empty')
 
 
 class WorkoutExerciseSchema(Schema):
@@ -58,6 +71,7 @@ class WorkoutSchema(Schema):
         validate=validate.Range(min=1, max=600, error='Duration must be between 1 and 600 minutes')
     )
     notes = fields.Str(allow_none=True)
+    user_id = fields.Int(dump_only=True)
 
     exercises = fields.Nested(ExerciseSchema, many=True, only=('id', 'name', 'category', 'equipment_needed'), dump_only=True)
     workout_exercises = fields.Nested(WorkoutExerciseSchema, many=True, only=('id', 'reps', 'sets', 'duration_seconds', 'exercise'), dump_only=True)
@@ -74,6 +88,8 @@ class WorkoutSchema(Schema):
         if value <= 0:
             raise ValidationError('Duration must be positive')
 
+
+user_schema = UserSchema()
 
 exercise_schema = ExerciseSchema()
 exercises_schema = ExerciseSchema(many=True, exclude=('workouts', 'workout_exercises'))
