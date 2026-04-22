@@ -93,6 +93,27 @@ def check_session():
     return make_response(jsonify({'error': 'Not logged in'}), 401)
 
 
+@app.route('/me/stats', methods=['GET'])
+def get_user_stats():
+    user_id = session.get('user_id')
+    if not user_id:
+        return make_response(jsonify({'error': 'Unauthorized'}), 401)
+
+    user = db.session.get(User, user_id)
+    if not user:
+        return make_response(jsonify({'error': 'Unauthorized'}), 401)
+
+    workouts = Workout.query.filter_by(user_id=user.id).all()
+    total_workouts = len(workouts)
+    total_minutes = sum(w.duration_minutes for w in workouts)
+
+    return make_response(jsonify({
+        'username': user.username,
+        'total_workouts': total_workouts,
+        'total_minutes': total_minutes
+    }), 200)
+
+
 # ==================== HELPER ====================
 
 def get_current_user():
